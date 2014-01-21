@@ -12,7 +12,7 @@ public class DBHelper extends SQLiteOpenHelper {
 
 	static final String TAG = DBHelper.class.getSimpleName();
 
-	final static int _DBversion = 2; // þýˆæœ¬
+	final static int _DBversion = 2; // ï¿½ï¿½æœ¬
 
 	final static String _DBname = "wifiData.db";
 
@@ -20,11 +20,11 @@ public class DBHelper extends SQLiteOpenHelper {
 
 	static final String COUNTER = "Counter";
 
-	public static final String SCAN_ID = "Scan_id";
+	public static final String SCAN_ID = "Scan_Id";
 
-	public static final String MAC_ADDRESS = "Mac_address";
+	public static final String MAC_ADDRESS = "Mac_Address";
 
-	public static final String AP_NAME = "Ap_name";
+	public static final String AP_NAME = "Ap_Name";
 
 	public static final String RSS = "RSS";
 
@@ -80,7 +80,7 @@ public class DBHelper extends SQLiteOpenHelper {
 
 		db.execSQL(SQL);
 
-		Log.e(TAG, "creat table succeed!");
+		Log.d(TAG, "creat table succeed!");
 
 	}
 
@@ -89,7 +89,7 @@ public class DBHelper extends SQLiteOpenHelper {
 
 		// TODO Auto-generated method stub
 
-		Log.e(TAG, "SQLiteHelper onOpen");
+		Log.d(TAG, "SQLiteHelper onOpen");
 
 		super.onOpen(db);
 
@@ -104,13 +104,13 @@ public class DBHelper extends SQLiteOpenHelper {
 
 		onCreate(db);
 
-		Log.e(TAG, "SQLiteHelper onUpgrade!");
+		Log.d(TAG, "SQLiteHelper onUpgrade!");
 
 	}
 	/*
 	 * public void clean (){
 	 * this.getWritableDatabase().execSQL("DROP TABLE IF EXISTS "+_TableName);
-	 * System.out.println("cleanþý é™¤è¡þý);
+	 * System.out.println("cleanï¿½ï¿½é™¤ï¿½ï¿½ï¿½);
 	 * this.onCreate(this.getWritableDatabase());
 	 * this.getWritableDatabase().close(); }
 	 */

@@ -3,52 +3,58 @@
     android:id="@+id/ScrollView01"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent" >
- <RelativeLayout 
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@drawable/gray"
-    tools:context=".MainActivity"
-     >
 
-     <Button
-         android:id="@+id/scan"
-         android:layout_width="wrap_content"
-         android:layout_height="wrap_content"
-         android:text="@string/startScan" />
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/gray"
+        tools:context=".MainActivity" >
 
-      <TextView
-         android:id="@+id/wifiSS"
-         android:layout_width="match_parent"
-         android:layout_height="match_parent"
-         android:layout_below="@+id/scan"
-         android:textColor="@drawable/black"
-         android:textSize="20sp" />
+        <Button
+            android:id="@+id/scan"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/startScan" />
 
-      <Button
-          android:id="@+id/upload"
-          android:layout_width="wrap_content"
-          android:layout_height="wrap_content"
-          android:layout_toRightOf="@+id/scan"
-          android:layout_centerHorizontal="true"
-          android:text="@string/upload" />
-      
-      <EditText 
-          android:id="@+id/hint"
-          android:layout_width="100dp"
-          android:layout_height="30dp"
-          android:background="@drawable/white"
-          android:layout_toRightOf="@+id/upload"
-          android:hint="@string/position"
-          />
+        <TextView
+            android:id="@+id/wifiSS"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_below="@+id/upload"
+            android:textColor="@drawable/black"
+            android:textSize="20sp" />
 
-      <Button
-          android:id="@+id/enter"
-          android:layout_width="wrap_content"
-          android:layout_height="wrap_content"
-          android:layout_alignParentRight="true"
-          android:layout_alignParentTop="true"
-          android:text="OK!" />
+        <Button
+            android:id="@+id/convert"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:layout_toRightOf="@+id/scan"
+            android:text="@string/convert" />
 
-</RelativeLayout>
+        <Button
+            android:id="@+id/upload"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:layout_below="@+id/convert"
+            android:text="@string/upload" />
+
+        <EditText
+            android:id="@+id/hint"
+            android:layout_width="100dp"
+            android:layout_height="30dp"
+            android:layout_toRightOf="@+id/upload"
+            android:background="@drawable/white"
+            android:hint="@string/position" />
+
+        <Button
+            android:id="@+id/enter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentTop="true"
+            android:text="OK!" />
+    </RelativeLayout>
 
 </ScrollView>

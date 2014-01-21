@@ -1,14 +1,25 @@
 package com.example.wifi;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
 import android.app.Activity;
+import android.content.ComponentName;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -17,22 +28,28 @@ import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.IBinder;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
-
+import android.widget.Toast;
 
 public class MainActivity extends Activity {
 
+	public static final String TEMP_FILE_NAME = "WifiRecord";
 	private static final String TAG = "MyActivity";
 	private TextView tv;
-	private Button mScanButton, mUploadButton, mEnterButton;
+	private Button mScanButton, mUploadButton, mEnterButton, mConvertButton;
 	private EditText position;
 	public WifiManager wm;
-	WifiManager.WifiLock wmlock;// ªý¤îWIFI¶i¤JºÎ¯v
-	Handler mHandler;
+	public static final int TIME = 1;
+	WifiManager.WifiLock wmlock;// ï¿½ï¿½ï¿½WIFIï¿½iï¿½Jï¿½Î¯v
+	// Handler mHandler;
 	String otherwifi, pos;
 
 	int strength;
@@ -43,9 +60,21 @@ public class MainActivity extends Activity {
 
 	private SQLiteDatabase db = null;
 	private DBHelper helper = null;
-	public String _DBname = "wifiData.db";// ¸ê®Æ®w¦W
+	public String _DBname = "wifiData.db";
 
-	public String uriAPI = "http://140.116.39.172/wifi_data/wifi_update.php";
+	public static String URI_API = "http://140.116.179.24/wifi_Project/wifi_update.php";
+		private ServiceConnection mServiceConnection = new ServiceConnection() {
+		public void onServiceConnected(ComponentName name, IBinder service) {
+			// TODO Auto-generated method stub
+			Log.d(TAG, "onServiceConnected" + name.getClassName());
+			// mUploadService = service.getService();
+		}
+
+		public void onServiceDisconnected(ComponentName name) {
+			Log.d(TAG, "onServiceDisconnected" + name.getClassName());
+		}
+
+	};
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -54,96 +83,121 @@ public class MainActivity extends Activity {
 
 		wm = (WifiManager) this.getSystemService(Context.WIFI_SERVICE);
 		mScanButton = (Button) findViewById(R.id.scan);
-		mScanButton.setOnClickListener(startClick);
+		mScanButton.setOnClickListener(scanButtonClickListener);
 		mUploadButton = (Button) findViewById(R.id.upload);
-		mUploadButton.setOnClickListener(uploadClick);
+		mUploadButton.setOnClickListener(uploadButtonClickListener);
 		mEnterButton = (Button) findViewById(R.id.enter);
-		mEnterButton.setOnClickListener(okayClick);
+		mEnterButton.setOnClickListener(enterButtonClickListener);
+		mConvertButton = (Button) findViewById(R.id.convert);
+		mConvertButton.setOnClickListener(convertButtonClickListener);
 		position = (EditText) findViewById(R.id.hint);
 		tv = (TextView) findViewById(R.id.wifiSS);
 		results = new ArrayList<ScanResult>();
-		mHandler = new Handler();
 
 		helper = new DBHelper(this, "wifiData.db", null, 1);
-		db = helper.getWritableDatabase();
 
 		SharedPreferences preferences = getPreferences(Context.MODE_PRIVATE);
 		counter = preferences.getInt("COUNTER", 0);
 	}
 
-	// /«ö¤U«ö¶s¶}©l±½´yªþªñAP
-	// ¨Ã±N°Ê§@postµ¹runnable
-	View.OnClickListener startClick = new View.OnClickListener() {
+	// /ï¿½ï¿½ï¿½Uï¿½ï¿½ï¿½sï¿½}ï¿½lï¿½ï¿½ï¿½yï¿½ï¿½ï¿½ï¿½AP
+	// ï¿½Ã±Nï¿½Ê§@postï¿½ï¿½runnable
+	View.OnClickListener scanButtonClickListener = new View.OnClickListener() {
 		@Override
 		public void onClick(View v) {
-			mHandler.post(r1);
+			Handler lHandler = new Handler();
+			Runnable r1 = new InnerRunnable(lHandler);
+			lHandler.post(r1);
 
 			if (!wm.isWifiEnabled()) {
 
 				wm.setWifiEnabled(true);
-				// Toast.makeText(MainActivity.this, "WiFi¶}±Ò¤¤",
+				// Toast.makeText(MainActivity.this, "WiFiï¿½}ï¿½Ò¤ï¿½",
 				// Toast.LENGTH_SHORT).show();
 			}
 			counter++;
 			getPreferences(Context.MODE_PRIVATE).edit()
 					.putInt("COUNTER", counter).commit();
 			wm.startScan();
-			// °»´ú©P³òWIFIÀô¹Ò
+			// ï¿½ï¿½ï¿½ï¿½Pï¿½ï¿½WIFIï¿½ï¿½ï¿½ï¿½
 			results = wm.getScanResults();
-			// ¥Ø«e³s½uWIFI¸ê°T
+			// ï¿½Ø«eï¿½sï¿½uWIFIï¿½ï¿½T
 			WifiInfo info = wm.getConnectionInfo();
 			// configure = wm.getConfiguredNetworks();
 			strength = info.getRssi();
 			speed = info.getLinkSpeed();
-
+			Toast.makeText(v.getContext(), "Starting Scan. Please Wait 15s",
+					Toast.LENGTH_LONG).show();
 		}
 
 	};
 
-	// ¦¹«ö¶s¬OÅýuser¯à¦Û¤v¿é¤J¦aÂI¦WºÙ
-	View.OnClickListener okayClick = new View.OnClickListener() {
+	// ï¿½ï¿½ï¿½ï¿½ï¿½sï¿½Oï¿½ï¿½userï¿½ï¿½Û¤vï¿½ï¿½Jï¿½aï¿½Iï¿½Wï¿½ï¿½
+	View.OnClickListener enterButtonClickListener = new View.OnClickListener() {
 
 		@Override
 		public void onClick(View v) {
 			// TODO Auto-generated method stub
 			pos = position.getText().toString();
+			Toast.makeText(v.getContext(), "The position is " + pos,
+					Toast.LENGTH_LONG).show();
 			// Log.d(TAG, pos);
 		}
 
 	};
 
-	// upload«ö¶s¬O­nÅýsqlite table¯àª½±µ¤W¶Ç¨ìphpºô§}
-	// ¥Ø«eÁÙ¨S¦³¶}µo
-	View.OnClickListener uploadClick = new View.OnClickListener() {
+	// CONVERT TO XML
+	View.OnClickListener convertButtonClickListener = new View.OnClickListener() {
 
 		@Override
 		public void onClick(View v) {
 			Cursor cursor;
-			File file = new File(getFilesDir(), "temp");
-			SQLiteDatabase readDatabase= helper.getReadableDatabase();
-			cursor = readDatabase.rawQuery(String.format("SELECT * FROM %s", DBHelper._TableName), null);
-			 
+			File file = new File(getFilesDir(), TEMP_FILE_NAME);
+			SQLiteDatabase readDatabase = helper.getReadableDatabase();
+			cursor = readDatabase.rawQuery(
+					String.format("SELECT * FROM %s", DBHelper._TableName),
+					null);
+
 			XmlBuilder mXmlBuilder = new XmlBuilder(cursor, file);
 			mXmlBuilder.converToXmlFile();
+			Toast.makeText(v.getContext(), "Convert to XML Succeed!",
+					Toast.LENGTH_LONG).show();
 		}
 	};
+	// uploadï¿½ï¿½ï¿½sï¿½Oï¿½nï¿½ï¿½sqlite tableï¿½àª½ï¿½ï¿½ï¿½Wï¿½Ç¨ï¿½phpï¿½ï¿½ï¿½}
+	View.OnClickListener uploadButtonClickListener = new View.OnClickListener() {
 
+		@Override
+		public void onClick(View v) {
+			// upload(file);
+			Intent intent = new Intent(MainActivity.this, UploadIntentService.class);
+			startService(intent);
+			Toast.makeText(v.getContext(), "Upload File Succeed!",
+					Toast.LENGTH_LONG).show();
+		}
+	};
 	int i, d = 1;
 	String data, apMac, apId;
 	int level;
-	// ±N¨C¦¸±½´yªº¸ê®Æ¦s¤JtxtÀÉ ¨C¤@¦¸scan·|±o¨ìªþªñ©Ò¦³APªº°T¸¹
-	// ¾ã­Órunnable·|¨Cdelay 0.5¬í¦Arun¡Arun30­Ó´`Àô¡A¦]¦¹·|±o¨ìªþªñ©Ò¦³AP¦U30­Ó°T¸¹
 
-	final Runnable r1 = new Runnable() {
+	private class InnerRunnable implements Runnable {
+		
+		Handler mHandler;
+
+		public InnerRunnable(Handler handler) {
+			mHandler = handler;
+		}
+
 		@Override
 		public void run() {
-
-			wm.startScan(); // ¨CRUN¤@¦¸³£­«·s±½´y¤@¦¸°T¸¹
+			db = helper.getWritableDatabase();
+			wm.startScan();
 			results = wm.getScanResults();
-			for (int i = 0; i < results.size(); i++) {
+			data = "";
+			for (int i = 0; i < 1; i++) {
 
 				data += results.get(i).BSSID + "\n" + results.get(i).SSID
-						+ "\n" + results.get(i).level + "\n"; // SSID¬°AP¦WºÙ¡Alevel¬°°T¸¹±j«×
+						+ "\n" + results.get(i).level + "\n";
 				apMac = results.get(i).BSSID;
 				apId = results.get(i).SSID;
 				level = results.get(i).level;
@@ -151,39 +205,40 @@ public class MainActivity extends Activity {
 
 				/*
 				 * create object of type ContentValue with represents data been
-				 * inserted table¦@¤­­ÓÄæ¦ì _SCANID¬O«ü30¦¸±½´y¤¤ªº­þ¤@¦¸ _BSSID¬OAPªºMAC ADDRESS
-				 * _SSID¬OAP¦WºÙ _LEVEL¬°°T¸¹±j«× _POS¬O¥ý«e¨Ï¥ÎªÌ¿é¤Jªº¦aÂI¦WºÙ
+				 * inserted tableï¿½@ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ _SCANIDï¿½Oï¿½ï¿½30ï¿½ï¿½ï¿½ï¿½ï¿½yï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½@ï¿½ï¿½
+				 * _BSSIDï¿½OAPï¿½ï¿½MAC ADDRESS _SSIDï¿½OAPï¿½Wï¿½ï¿½ _LEVELï¿½ï¿½ï¿½Tï¿½ï¿½ï¿½jï¿½ï¿½
+				 * _POSï¿½Oï¿½ï¿½eï¿½Ï¥ÎªÌ¿ï¿½Jï¿½ï¿½ï¿½aï¿½Iï¿½Wï¿½ï¿½
 				 */
 				ContentValues values = new ContentValues();
-				values.put("Scan_id", d);
-				values.put("Mac_address", apMac);
-				values.put("Ap_name", apId);
+				values.put("Scan_Id", d);
+				values.put("Mac_Address", apMac);
+				values.put("Ap_Name", apId);
 				values.put("RSS", level);
 				values.put("Position", pos);
 				values.put("Counter", counter);
 
 				db = helper.getWritableDatabase();
 				db.insert(DBHelper._TableName, null, values);
-				db.close();
-			}
 
-			// ¨Cdelay 0.5¬í RUN¤@¦¸
-			if (d < 30) {
+			}
+			db.close();
+			
+			if (d < TIME) {
 				d++;
-				mHandler.postDelayed(r1, 500);
+				mHandler.postDelayed(this, 500);
 			}
 
 			tv.setText(data);
 
 		}
+		
 
 		/*
 		 * public boolean onCreateOptionsMenu(Menu menu) { // Inflate the menu;
 		 * this adds items to the action bar if it is present.
 		 * getMenuInflater().inflate(R.menu.main, menu); return true; }
 		 */
-
-	};
+	}
 
 	@Override
 	protected void onDestroy() {
@@ -194,7 +249,6 @@ public class MainActivity extends Activity {
 		super.onDestroy();
 	}
 
-	
 	@Override
 	protected void onPause() {
 		// TODO Auto-generated method stub
@@ -205,7 +259,7 @@ public class MainActivity extends Activity {
 
 		private static final String XML_OPENING = "<?xml version=\"1.0\" encoding=\"utf-8\"?>";
 		private static final String TUPLENAME = "WifiRecord";
-		
+
 		private Cursor cursor;
 		private File file;
 
@@ -213,50 +267,51 @@ public class MainActivity extends Activity {
 			this.cursor = cursor;
 			this.file = file;
 		}
+
 		protected void converToXmlFile() {
 			StringBuilder mBuilder = new StringBuilder();
 			mBuilder.append(XmlBuilder.XML_OPENING);
 			while (cursor.moveToNext()) {
-				int ColumnOne = cursor.getInt(0);
-				int ColumnTwo = cursor.getInt(1);
-				int ColumnThree = cursor.getInt(2);
-				int ColumnFour = cursor.getInt(3);
-				int ColumnFive = cursor.getInt(4);
-				int ColumnSix = cursor.getInt(5);
+				String ColumnOne = cursor.getString(0);
+				String ColumnTwo = cursor.getString(1);
+				String ColumnThree = cursor.getString(2);
+				String ColumnFour = cursor.getString(3);
+				String ColumnFive = cursor.getString(4);
+				String ColumnSix = cursor.getString(5);
 
 				mBuilder.append(openTag(TUPLENAME));
 				mBuilder.append("\n");
-				
-				mBuilder.append("\t"+openTag(DBHelper.COUNTER));
+
+				mBuilder.append("\t" + openTag(DBHelper.COUNTER));
 				mBuilder.append(ColumnOne);
 				mBuilder.append(endTag(DBHelper.COUNTER));
 				mBuilder.append("\n");
-				
-				mBuilder.append("\t"+openTag(DBHelper.SCAN_ID));
+
+				mBuilder.append("\t" + openTag(DBHelper.SCAN_ID));
 				mBuilder.append(ColumnTwo);
 				mBuilder.append(endTag(DBHelper.SCAN_ID));
 				mBuilder.append("\n");
-				
-				mBuilder.append("\t"+openTag(DBHelper.MAC_ADDRESS));
+
+				mBuilder.append("\t" + openTag(DBHelper.MAC_ADDRESS));
 				mBuilder.append(ColumnThree);
 				mBuilder.append(endTag(DBHelper.MAC_ADDRESS));
 				mBuilder.append("\n");
-								
-				mBuilder.append("\t"+openTag(DBHelper.AP_NAME));
+
+				mBuilder.append("\t" + openTag(DBHelper.AP_NAME));
 				mBuilder.append(ColumnFour);
 				mBuilder.append(endTag(DBHelper.AP_NAME));
 				mBuilder.append("\n");
-				
-				mBuilder.append("\t"+openTag(DBHelper.RSS));
+
+				mBuilder.append("\t" + openTag(DBHelper.RSS));
 				mBuilder.append(ColumnFive);
 				mBuilder.append(endTag(DBHelper.RSS));
 				mBuilder.append("\n");
-				
-				mBuilder.append("\t"+openTag(DBHelper.POSITION));
+
+				mBuilder.append("\t" + openTag(DBHelper.POSITION));
 				mBuilder.append(ColumnSix);
 				mBuilder.append(endTag(DBHelper.POSITION));
 				mBuilder.append("\n");
-				
+
 				mBuilder.append(endTag(TUPLENAME));
 				mBuilder.append("\n");
 			}
@@ -281,6 +336,42 @@ public class MainActivity extends Activity {
 		static String endTag(String tag) {
 			return "</" + tag + ">";
 		}
+
 	}
 
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		menu.add("Start");
+		menu.add("Stop");
+		return true;
+	}
+
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		Log.v(TAG, String.format("item.getTitle().equals(TEST) = %B ", item
+				.getTitle().equals("TEST")));
+		if (item.getTitle().equals("Start")) {
+			start();
+			return true;
+		} else if (item.getTitle().equals("Stop")) {
+			stop();
+			return true;
+		}
+		return false;
+	}
+
+	private void stop() {
+		Log.v(TAG, "stop()");
+		Intent intent = new Intent();
+		intent.setClass(this, UploadIntentService.class);
+		stopService(intent);
+	}
+
+	private void start() {
+		Log.v(TAG, String.format("start(), file is %s", new File(getFilesDir(),
+				TEMP_FILE_NAME)));
+		Intent intent = new Intent();
+		intent.setClass(this, UploadIntentService.class);
+		startService(intent);
+	}
 }

@@ -7,4 +7,5 @@
     <string name="startScan">開始掃描</string>
     <string name="upload">上傳</string>
 	<string name="position">請輸入地點</string>
+	<string name="convert">Convert</string>
 </resources>
