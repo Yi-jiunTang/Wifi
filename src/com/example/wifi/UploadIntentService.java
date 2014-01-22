@@ -29,22 +29,11 @@ public class UploadIntentService extends IntentService {
 
 	@Override
 	protected void onHandleIntent(Intent arg0) {
-		File file = new File(getFilesDir(), MainActivity.TEMP_FILE_NAME);
-		Log.v(TAG,
-				String.format("File(%s) is exist ? %B;", file, file.exists()));
-		if (file.exists()) {
-			try {
-				upload(file);
+		upload();
 
-				Log.v(TAG, "upload finish");
-			} catch (Exception e) {
-				stopSelf();
-			}
-
-		}
 	}
 
-	void upload(File file) {
+	void upload() {
 		try {
 			HttpURLConnection httpUrlConnection = (HttpURLConnection) new URL(
 					MainActivity.URI_API).openConnection();
@@ -52,13 +41,17 @@ public class UploadIntentService extends IntentService {
 			httpUrlConnection.setRequestMethod("POST");
 			OutputStream os = httpUrlConnection.getOutputStream();
 			Thread.sleep(1000);
-			BufferedInputStream fis = new BufferedInputStream(
-					new FileInputStream(file));
+			
+			BufferedInputStream fis = new BufferedInputStream(openFileInput("WifiRecord"));
 
-			for (int i = 0; i < fis.available(); i++) {
-				os.write(fis.read());
+			byte[] temp = new byte[1024 * 4];
+			int count;
+			while ((count = fis.read(temp)) != -1) {
+				os.write(temp, 0, count);
+				Log.v(TAG, new String(temp, 0, count));
 			}
 
+			fis.close();
 			os.close();
 			BufferedReader in = new BufferedReader(new InputStreamReader(
 					httpUrlConnection.getInputStream()));

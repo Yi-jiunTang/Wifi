@@ -30,6 +30,8 @@ public class DBHelper extends SQLiteOpenHelper {
 
 	public static final String POSITION = "Position";
 
+	public static final String WIFIRECORDS = "WifiRecords";
+
 	// private SQLiteDatabase db;
 
 	public DBHelper(Context context) {

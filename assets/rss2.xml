@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rssRecords>
+  <WifiRecord>
+    <Counter>1</Counter>
+	<Scan_id>29</Scan_id>
+    <Mac_address>c8:3a:35:22:83:c0</Mac_address>
+    <Ap_name>DIPLAB</Ap_name>
+    <RSS>-49</RSS> 
+	<Position>AA</Position>
+  </WifiRecord>
+  <WifiRecord>
+    <Counter>2</Counter>
+	<Scan_id>29</Scan_id>
+    <Mac_address>c8:3a:35:22:83:c0</Mac_address>
+    <Ap_name>DIPLAB</Ap_name>
+    <RSS>-49</RSS> 
+	<Position>AA</Position>
+  </WifiRecord>
+  <WifiRecord>
+    <Counter>3</Counter>
+	<Scan_id>29</Scan_id>
+    <Mac_address>c8:3a:35:22:83:c0</Mac_address>
+    <Ap_name>DIPLAB</Ap_name>
+    <RSS>-49</RSS> 
+	<Position>AA</Position>
+  </WifiRecord>
+</rssRecords>
+

@@ -14,6 +14,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.ComponentName;
 import android.content.ContentValues;
@@ -47,7 +48,7 @@ public class MainActivity extends Activity {
 	private Button mScanButton, mUploadButton, mEnterButton, mConvertButton;
 	private EditText position;
 	public WifiManager wm;
-	public static final int TIME = 1;
+	public static final int TIME = 30;
 	WifiManager.WifiLock wmlock;// ���WIFI�i�J�ίv
 	// Handler mHandler;
 	String otherwifi, pos;
@@ -63,7 +64,7 @@ public class MainActivity extends Activity {
 	public String _DBname = "wifiData.db";
 
 	public static String URI_API = "http://140.116.179.24/wifi_Project/wifi_update.php";
-		private ServiceConnection mServiceConnection = new ServiceConnection() {
+	private ServiceConnection mServiceConnection = new ServiceConnection() {
 		public void onServiceConnected(ComponentName name, IBinder service) {
 			// TODO Auto-generated method stub
 			Log.d(TAG, "onServiceConnected" + name.getClassName());
@@ -169,11 +170,14 @@ public class MainActivity extends Activity {
 
 		@Override
 		public void onClick(View v) {
-			// upload(file);
-			Intent intent = new Intent(MainActivity.this, UploadIntentService.class);
-			startService(intent);
+			// // upload(file);
+			// Intent intent = new Intent(MainActivity.this,
+			// UploadIntentService.class);
+			// startService(intent);
 			Toast.makeText(v.getContext(), "Upload File Succeed!",
 					Toast.LENGTH_LONG).show();
+			upload();
+			initializeDb();
 		}
 	};
 	int i, d = 1;
@@ -181,7 +185,7 @@ public class MainActivity extends Activity {
 	int level;
 
 	private class InnerRunnable implements Runnable {
-		
+
 		Handler mHandler;
 
 		public InnerRunnable(Handler handler) {
@@ -194,7 +198,7 @@ public class MainActivity extends Activity {
 			wm.startScan();
 			results = wm.getScanResults();
 			data = "";
-			for (int i = 0; i < 1; i++) {
+			for (int i = 0; i < results.size(); i++) {
 
 				data += results.get(i).BSSID + "\n" + results.get(i).SSID
 						+ "\n" + results.get(i).level + "\n";
@@ -222,7 +226,7 @@ public class MainActivity extends Activity {
 
 			}
 			db.close();
-			
+
 			if (d < TIME) {
 				d++;
 				mHandler.postDelayed(this, 500);
@@ -231,7 +235,6 @@ public class MainActivity extends Activity {
 			tv.setText(data);
 
 		}
-		
 
 		/*
 		 * public boolean onCreateOptionsMenu(Menu menu) { // Inflate the menu;
@@ -249,9 +252,13 @@ public class MainActivity extends Activity {
 		super.onDestroy();
 	}
 
+	private void initializeDb() {
+		helper.getWritableDatabase().delete(DBHelper._TableName, null, null);
+	}
+
 	@Override
 	protected void onPause() {
-		// TODO Auto-generated method stub
+		super.onPause();
 		Log.e(TAG, "onPause");
 	}
 
@@ -270,7 +277,9 @@ public class MainActivity extends Activity {
 
 		protected void converToXmlFile() {
 			StringBuilder mBuilder = new StringBuilder();
-			mBuilder.append(XmlBuilder.XML_OPENING);
+			// mBuilder.append(XmlBuilder.XML_OPENING);
+			mBuilder.append(openTag(DBHelper.WIFIRECORDS));
+			mBuilder.append("\n");
 			while (cursor.moveToNext()) {
 				String ColumnOne = cursor.getString(0);
 				String ColumnTwo = cursor.getString(1);
@@ -315,6 +324,7 @@ public class MainActivity extends Activity {
 				mBuilder.append(endTag(TUPLENAME));
 				mBuilder.append("\n");
 			}
+			mBuilder.append(endTag(DBHelper.WIFIRECORDS));
 			Log.v(TAG, mBuilder.toString());
 			saveToFile(mBuilder.toString());
 		}
@@ -343,6 +353,7 @@ public class MainActivity extends Activity {
 	public boolean onCreateOptionsMenu(Menu menu) {
 		menu.add("Start");
 		menu.add("Stop");
+		menu.add("test");
 		return true;
 	}
 
@@ -356,8 +367,21 @@ public class MainActivity extends Activity {
 		} else if (item.getTitle().equals("Stop")) {
 			stop();
 			return true;
+		} else if (item.getTitle().equals("test")) {
+			test();
+			return true;
 		}
 		return false;
+	}
+
+	@SuppressLint("NewApi")
+	private void test() {
+
+		Log.v(TAG,
+				Integer.toString(helper
+						.getReadableDatabase()
+						.query(false, DBHelper._TableName, null, null, null,
+								null, null, null, null, null).getCount()));
 	}
 
 	private void stop() {
@@ -374,4 +398,11 @@ public class MainActivity extends Activity {
 		intent.setClass(this, UploadIntentService.class);
 		startService(intent);
 	}
+
+	private void upload() {
+		Intent intent = new Intent();
+		intent.setClass(this, UploadIntentService.class);
+		startService(intent);
+	}
+
 }
