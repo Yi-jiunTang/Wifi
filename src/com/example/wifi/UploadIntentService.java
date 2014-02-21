@@ -10,10 +10,13 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.security.PublicKey;
 
 import android.app.IntentService;
 import android.content.Intent;
+import android.os.Handler;
 import android.util.Log;
+import android.widget.Toast;
 
 public class UploadIntentService extends IntentService {
 
@@ -32,7 +35,7 @@ public class UploadIntentService extends IntentService {
 		upload();
 
 	}
-
+	private static String s = null;
 	void upload() {
 		try {
 			HttpURLConnection httpUrlConnection = (HttpURLConnection) new URL(
@@ -43,12 +46,12 @@ public class UploadIntentService extends IntentService {
 			Thread.sleep(1000);
 			
 			BufferedInputStream fis = new BufferedInputStream(openFileInput("WifiRecord"));
-
-			byte[] temp = new byte[1024 * 4];
+		
+			byte[] temp = new byte[1024 * 4];			// the common size of Internet transmission
 			int count;
-			while ((count = fis.read(temp)) != -1) {
+			while ((count = fis.read(temp)) != -1) {	//if the xmlFile is read over, return-1
 				os.write(temp, 0, count);
-				Log.v(TAG, new String(temp, 0, count));
+//				Log.v(TAG, new String(temp, 0, count));
 			}
 
 			fis.close();
@@ -56,9 +59,18 @@ public class UploadIntentService extends IntentService {
 			BufferedReader in = new BufferedReader(new InputStreamReader(
 					httpUrlConnection.getInputStream()));
 
-			String s = null;
-			while ((s = in.readLine()) != null) {
+//			String s = null;
+			while ((s = in.readLine()) != null) {		//accept the messages returned from sever
 				System.out.println(s);
+				Handler msgHandler = new Handler(getMainLooper());
+				msgHandler.post(new Runnable() {
+					
+					@Override
+					public void run() {
+						Toast.makeText(getApplicationContext(), s, Toast.LENGTH_LONG).show();
+					}
+				});
+				initializeDb();
 			}
 
 			in.close();
@@ -76,5 +88,11 @@ public class UploadIntentService extends IntentService {
 
 		}
 	}
+
+	private void initializeDb() {
+		// TODO Auto-generated method stub
+		MainActivity.helper.getWritableDatabase().delete(DBHelper._TableName, null, null);
+	}
+	
 
 }

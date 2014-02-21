@@ -6,7 +6,7 @@
 
     <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="129dp"
         android:background="@drawable/gray"
         tools:context=".MainActivity" >
 
@@ -15,14 +15,6 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/startScan" />
-
-        <TextView
-            android:id="@+id/wifiSS"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_below="@+id/upload"
-            android:textColor="@drawable/black"
-            android:textSize="20sp" />
 
         <Button
             android:id="@+id/convert"
@@ -36,25 +28,54 @@
             android:id="@+id/upload"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_centerHorizontal="true"
-            android:layout_below="@+id/convert"
+            android:layout_alignParentTop="true"
+            android:layout_toRightOf="@+id/convert"
             android:text="@string/upload" />
 
         <EditText
-            android:id="@+id/hint"
-            android:layout_width="100dp"
-            android:layout_height="30dp"
-            android:layout_toRightOf="@+id/upload"
+            android:id="@+id/scanFreq"
+            android:layout_width="150sp"
+            android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
+            android:layout_below="@+id/hint"
             android:background="@drawable/white"
-            android:hint="@string/position" />
+            android:ems="10"
+            android:hint="@string/frequency"
+            android:inputType="numberDecimal" />
+
+        <EditText
+            android:id="@+id/hint"
+            android:layout_width="150dp"
+            android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
+            android:layout_below="@+id/scan"
+            android:background="@drawable/white"
+            android:ems="10"
+            android:hint="@string/position"
+            android:inputType="numberDecimal" >
+
+            <requestFocus />
+        </EditText>
+
+        <TextView
+            android:id="@+id/wifiSS"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentLeft="true"
+            android:layout_below="@+id/enter"
+            android:textColor="@drawable/black"
+            android:textSize="20sp" />
 
         <Button
             android:id="@+id/enter"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignParentRight="true"
-            android:layout_alignParentTop="true"
+            android:layout_alignLeft="@+id/upload"
+            android:layout_alignTop="@+id/hint"
+            android:layout_marginLeft="32dp"
             android:text="OK!" />
+
     </RelativeLayout>
 
 </ScrollView>

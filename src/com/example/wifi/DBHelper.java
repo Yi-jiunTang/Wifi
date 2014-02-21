@@ -12,13 +12,13 @@ public class DBHelper extends SQLiteOpenHelper {
 
 	static final String TAG = DBHelper.class.getSimpleName();
 
-	final static int _DBversion = 2; // ��本
+	final static int _DBversion = 6; // database version
 
 	final static String _DBname = "wifiData.db";
 
 	final static String _TableName = "data";
 
-	static final String COUNTER = "Counter";
+	//static final String COUNTER = "Counter";
 
 	public static final String SCAN_ID = "Scan_Id";
 
@@ -28,10 +28,14 @@ public class DBHelper extends SQLiteOpenHelper {
 
 	public static final String RSS = "RSS";
 
-	public static final String POSITION = "Position";
+	public static final String LOCATION = "Location";
 
 	public static final String WIFIRECORDS = "WifiRecords";
 
+	public static final String SEQUENCE = "Sequence";
+	
+	//public static final String DEVICE_ID = "Device_Id";
+	
 	// private SQLiteDatabase db;
 
 	public DBHelper(Context context) {
@@ -56,8 +60,8 @@ public class DBHelper extends SQLiteOpenHelper {
 
 				+ _TableName
 				+ "("
-
-				+ COUNTER
+				
+				+ SEQUENCE
 				+ " INTEGER NOT NULL,"
 
 				+ SCAN_ID
@@ -72,13 +76,14 @@ public class DBHelper extends SQLiteOpenHelper {
 				+ RSS
 				+ " TEXT NOT NULL,"
 
-				+ POSITION
-				+ " TEXT NOT NULL,"
+				+ LOCATION
+				+ " INTEGER NOT NULL,"
+				
+				//+ DEVICE_ID
+				//+ " TEXT NOT NULL,"
 
-				+ String.format("PRIMARY KEY(%s,%s,%s)", COUNTER,
-						SCAN_ID, MAC_ADDRESS) +
-
-				");";
+				+ String.format("PRIMARY KEY(%s,%s,%s)", SEQUENCE, SCAN_ID, MAC_ADDRESS) 
+				+ ");";
 
 		db.execSQL(SQL);
 

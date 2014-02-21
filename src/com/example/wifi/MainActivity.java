@@ -1,19 +1,12 @@
 package com.example.wifi;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
+import android.R.integer;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.ComponentName;
@@ -34,120 +27,132 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.telephony.TelephonyManager;
+
+;
 
 public class MainActivity extends Activity {
-
+	public static String URI_API = "http://140.116.39.172/wifi_data/wifi_update.php";
+	// public static String URI_API =
+	// "http://140.116.179.24/wifi_Project/wifi_update.php";
 	public static final String TEMP_FILE_NAME = "WifiRecord";
+	private static final String TUPLENAME = "WifiRecord";
 	private static final String TAG = "MyActivity";
+	// public static final int TIME = 30;
 	private TextView tv;
 	private Button mScanButton, mUploadButton, mEnterButton, mConvertButton;
-	private EditText position;
+	private EditText location, frequency;
 	public WifiManager wm;
-	public static final int TIME = 30;
-	WifiManager.WifiLock wmlock;// ���WIFI�i�J�ίv
-	// Handler mHandler;
-	String otherwifi, pos;
-
+	WifiManager.WifiLock unlock;// avoid wifi falling sleep
+	private List<ScanResult> results;
+	private SQLiteDatabase db = null;
+	public static DBHelper helper = null;
+	public String _DBname = "wifiData.db";
+	private TelephonyManager telephonyManager;
 	int strength;
 	int speed;
-	int counter;
-
-	private List<ScanResult> results;
-
-	private SQLiteDatabase db = null;
-	private DBHelper helper = null;
-	public String _DBname = "wifiData.db";
-
-	public static String URI_API = "http://140.116.179.24/wifi_Project/wifi_update.php";
-	private ServiceConnection mServiceConnection = new ServiceConnection() {
-		public void onServiceConnected(ComponentName name, IBinder service) {
-			// TODO Auto-generated method stub
-			Log.d(TAG, "onServiceConnected" + name.getClassName());
-			// mUploadService = service.getService();
-		}
-
-		public void onServiceDisconnected(ComponentName name) {
-			Log.d(TAG, "onServiceDisconnected" + name.getClassName());
-		}
-
-	};
+	int Sequence;
+	int level;
+	int i;
+	int pos, freq;
+	String data, apMac, apId;
+	String otherwifi, iMEIString, MACString;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
-
+		// setting all neeeded buttons
 		wm = (WifiManager) this.getSystemService(Context.WIFI_SERVICE);
-		mScanButton = (Button) findViewById(R.id.scan);
+		mScanButton = (Button) findViewById(R.id.scan); // start to scan
 		mScanButton.setOnClickListener(scanButtonClickListener);
-		mUploadButton = (Button) findViewById(R.id.upload);
+		mUploadButton = (Button) findViewById(R.id.upload); // upload to sever
 		mUploadButton.setOnClickListener(uploadButtonClickListener);
-		mEnterButton = (Button) findViewById(R.id.enter);
+		mEnterButton = (Button) findViewById(R.id.enter); // check the location
 		mEnterButton.setOnClickListener(enterButtonClickListener);
-		mConvertButton = (Button) findViewById(R.id.convert);
+		mConvertButton = (Button) findViewById(R.id.convert); // convert to xml
 		mConvertButton.setOnClickListener(convertButtonClickListener);
-		position = (EditText) findViewById(R.id.hint);
+		location = (EditText) findViewById(R.id.hint);
+		frequency = (EditText) findViewById(R.id.scanFreq);
 		tv = (TextView) findViewById(R.id.wifiSS);
+		// the wifi scan results is stored in arraylist
 		results = new ArrayList<ScanResult>();
+		// start my database class
+		this.helper = new DBHelper(this, "wifiData.db", null, 1);
 
-		helper = new DBHelper(this, "wifiData.db", null, 1);
-
+		// calculate how many times the process is executed
 		SharedPreferences preferences = getPreferences(Context.MODE_PRIVATE);
-		counter = preferences.getInt("COUNTER", 0);
+		Sequence = preferences.getInt("Sequence", 0);
+
+		telephonyManager = (TelephonyManager) this
+				.getSystemService(Context.TELEPHONY_SERVICE);
+		String iMEIString = telephonyManager.getDeviceId();
+		Log.d(TAG, "IMEI:" + iMEIString);
+
 	}
 
-	// /���U���s�}�l���y����AP
-	// �ñN�ʧ@post��runnable
+	// click scan button it will post to r1 execute the scan cycle
 	View.OnClickListener scanButtonClickListener = new View.OnClickListener() {
 		@Override
 		public void onClick(View v) {
+			// lHandler is manager, r1 is its employee
+			// one manager, one employee, one job
 			Handler lHandler = new Handler();
 			Runnable r1 = new InnerRunnable(lHandler);
 			lHandler.post(r1);
 
+			// ensure wifi is open
 			if (!wm.isWifiEnabled()) {
 
 				wm.setWifiEnabled(true);
-				// Toast.makeText(MainActivity.this, "WiFi�}�Ҥ�",
-				// Toast.LENGTH_SHORT).show();
+
 			}
-			counter++;
+
+			// click scan once, calculate +1
+			Sequence++;
 			getPreferences(Context.MODE_PRIVATE).edit()
-					.putInt("COUNTER", counter).commit();
+					.putInt("Sequence", Sequence).commit();
+
 			wm.startScan();
-			// ����P��WIFI����
 			results = wm.getScanResults();
-			// �ثe�s�uWIFI��T
 			WifiInfo info = wm.getConnectionInfo();
-			// configure = wm.getConfiguredNetworks();
 			strength = info.getRssi();
 			speed = info.getLinkSpeed();
-			Toast.makeText(v.getContext(), "Starting Scan. Please Wait 15s",
+			String MACString = info.getMacAddress();
+			Log.d(TAG, "MAC ADDRESS:" + MACString);
+			Toast.makeText(
+					v.getContext(),
+					"Starting Scan." + "Please Wait " + (freq / 2) + " seconds",
 					Toast.LENGTH_LONG).show();
 		}
 
 	};
 
-	// �����s�O��user��ۤv��J�a�I�W��
+	// record the location name
 	View.OnClickListener enterButtonClickListener = new View.OnClickListener() {
 
 		@Override
 		public void onClick(View v) {
 			// TODO Auto-generated method stub
-			pos = position.getText().toString();
-			Toast.makeText(v.getContext(), "The position is " + pos,
+			pos = Integer.parseInt(location.getText().toString());
+			freq = Integer.parseInt(frequency.getText().toString());
+			Toast.makeText(v.getContext(),
+					"The location is " + pos + ": " + freq + "times",
 					Toast.LENGTH_LONG).show();
-			// Log.d(TAG, pos);
+			Log.d(TAG, "pos:" + pos + "freq:" + freq);
 		}
 
 	};
 
-	// CONVERT TO XML
+	/*
+	 * CONVERT TO XML convert string is stored in WifiRecord first the resource
+	 * comes from sqlite database, it rawQuery all columns and append to xml the
+	 * xml results temporarily stored in file
+	 */
 	View.OnClickListener convertButtonClickListener = new View.OnClickListener() {
 
 		@Override
@@ -165,33 +170,32 @@ public class MainActivity extends Activity {
 					Toast.LENGTH_LONG).show();
 		}
 	};
-	// upload���s�O�n��sqlite table�ઽ���W�Ǩ�php���}
+	// upload to server, click button post to uoload();
+	// initialzeDB clean the uploaded data
 	View.OnClickListener uploadButtonClickListener = new View.OnClickListener() {
 
 		@Override
 		public void onClick(View v) {
-			// // upload(file);
-			// Intent intent = new Intent(MainActivity.this,
-			// UploadIntentService.class);
-			// startService(intent);
+
 			Toast.makeText(v.getContext(), "Upload File Succeed!",
 					Toast.LENGTH_LONG).show();
 			upload();
-			initializeDb();
+			// initializeDb();
 		}
 	};
-	int i, d = 1;
-	String data, apMac, apId;
-	int level;
 
+	// mHandler is a manager inside lHndler, it's responsible for counting scan
+	// times
 	private class InnerRunnable implements Runnable {
-
 		Handler mHandler;
+		int scanCnt = 1;
 
 		public InnerRunnable(Handler handler) {
 			mHandler = handler;
 		}
 
+		// scan all around wifi APs 0.5second a time till 30 times
+		// insert data into sqlite database
 		@Override
 		public void run() {
 			db = helper.getWritableDatabase();
@@ -205,21 +209,15 @@ public class MainActivity extends Activity {
 				apMac = results.get(i).BSSID;
 				apId = results.get(i).SSID;
 				level = results.get(i).level;
-				// Log.d(TAG, apMac+apId+level+pos);
 
-				/*
-				 * create object of type ContentValue with represents data been
-				 * inserted table�@������� _SCANID�O��30�����y�������@��
-				 * _BSSID�OAP��MAC ADDRESS _SSID�OAP�W�� _LEVEL���T���j��
-				 * _POS�O��e�ϥΪ̿�J���a�I�W��
-				 */
 				ContentValues values = new ContentValues();
-				values.put("Scan_Id", d);
+				values.put("Scan_Id", scanCnt);
 				values.put("Mac_Address", apMac);
 				values.put("Ap_Name", apId);
 				values.put("RSS", level);
-				values.put("Position", pos);
-				values.put("Counter", counter);
+				values.put("Location", pos);
+				values.put("Sequence", Sequence);
+				// values.put("Device_Id", MACString);//or MACString
 
 				db = helper.getWritableDatabase();
 				db.insert(DBHelper._TableName, null, values);
@@ -227,20 +225,19 @@ public class MainActivity extends Activity {
 			}
 			db.close();
 
-			if (d < TIME) {
-				d++;
+			if (scanCnt < freq) {
+				scanCnt++;
 				mHandler.postDelayed(this, 500);
+			}
+			if (scanCnt == freq) {
+				Toast.makeText(getApplicationContext(), freq + "次掃描結束",
+						Toast.LENGTH_LONG).show();
 			}
 
 			tv.setText(data);
 
 		}
 
-		/*
-		 * public boolean onCreateOptionsMenu(Menu menu) { // Inflate the menu;
-		 * this adds items to the action bar if it is present.
-		 * getMenuInflater().inflate(R.menu.main, menu); return true; }
-		 */
 	}
 
 	@Override
@@ -252,48 +249,65 @@ public class MainActivity extends Activity {
 		super.onDestroy();
 	}
 
-	private void initializeDb() {
-		helper.getWritableDatabase().delete(DBHelper._TableName, null, null);
-	}
-
 	@Override
 	protected void onPause() {
 		super.onPause();
-		Log.e(TAG, "onPause");
+		Log.d(TAG, "onPause");
 	}
 
+	@Override
+	protected void onStart() {
+		super.onStart();
+		Log.d(TAG, "onStart");
+	}
+
+	@Override
+	protected void onRestart() {
+		super.onRestart();
+		Log.d(TAG, "onRestart");
+	}
+
+	@Override
+	protected void onResume() {
+		super.onResume();
+		Log.d(TAG, "onResume");
+	}
+
+	// build a file store cursor results
 	static class XmlBuilder {
 
-		private static final String XML_OPENING = "<?xml version=\"1.0\" encoding=\"utf-8\"?>";
-		private static final String TUPLENAME = "WifiRecord";
-
-		private Cursor cursor;
-		private File file;
+		// private static final String XML_OPENING =
+		// "<?xml version=\"1.0\" encoding=\"utf-8\"?>";
+		private Cursor mCursor;
+		private File mFileXmlFile;
 
 		public XmlBuilder(Cursor cursor, File file) {
-			this.cursor = cursor;
-			this.file = file;
+			this.mCursor = cursor;
+			this.mFileXmlFile = file;
 		}
 
+		// the cursor results append tags for xml
 		protected void converToXmlFile() {
 			StringBuilder mBuilder = new StringBuilder();
 			// mBuilder.append(XmlBuilder.XML_OPENING);
 			mBuilder.append(openTag(DBHelper.WIFIRECORDS));
 			mBuilder.append("\n");
-			while (cursor.moveToNext()) {
-				String ColumnOne = cursor.getString(0);
-				String ColumnTwo = cursor.getString(1);
-				String ColumnThree = cursor.getString(2);
-				String ColumnFour = cursor.getString(3);
-				String ColumnFive = cursor.getString(4);
-				String ColumnSix = cursor.getString(5);
+			while (mCursor.moveToNext()) {
+				// string every column, add tags between them
+				String ColumnOne = mCursor.getString(0);
+				String ColumnTwo = mCursor.getString(1);
+				String ColumnThree = mCursor.getString(2);
+				String ColumnFour = mCursor.getString(3);
+				String ColumnFive = mCursor.getString(4);
+				String ColumnSix = mCursor.getString(5);
+				// String columnSeven = mCursor.getString(6);
 
 				mBuilder.append(openTag(TUPLENAME));
 				mBuilder.append("\n");
 
-				mBuilder.append("\t" + openTag(DBHelper.COUNTER));
+				mBuilder.append("\t" + openTag(DBHelper.SEQUENCE));
 				mBuilder.append(ColumnOne);
-				mBuilder.append(endTag(DBHelper.COUNTER));
+				mBuilder.append(endTag(DBHelper.SEQUENCE));
 				mBuilder.append("\n");
 
 				mBuilder.append("\t" + openTag(DBHelper.SCAN_ID));
@@ -316,22 +330,29 @@ public class MainActivity extends Activity {
 				mBuilder.append(endTag(DBHelper.RSS));
 				mBuilder.append("\n");
 
-				mBuilder.append("\t" + openTag(DBHelper.POSITION));
+				mBuilder.append("\t" + openTag(DBHelper.LOCATION));
 				mBuilder.append(ColumnSix);
-				mBuilder.append(endTag(DBHelper.POSITION));
+				mBuilder.append(endTag(DBHelper.LOCATION));
 				mBuilder.append("\n");
+
+				// mBuilder.append("\t" + openTag(DBHelper.DEVICE_ID));
+				// mBuilder.append(columnSeven);
+				// mBuilder.append(endTag(DBHelper.DEVICE_ID));
+				// mBuilder.append("\n");
 
 				mBuilder.append(endTag(TUPLENAME));
 				mBuilder.append("\n");
 			}
 			mBuilder.append(endTag(DBHelper.WIFIRECORDS));
 			Log.v(TAG, mBuilder.toString());
+			// append end, results save to file
 			saveToFile(mBuilder.toString());
 		}
 
+		// write the append results into mFileXmlFile
 		private void saveToFile(String dataxml) {
 			try {
-				FileWriter fileWriter = new FileWriter(file);
+				FileWriter fileWriter = new FileWriter(mFileXmlFile);
 				fileWriter.write(dataxml);
 				fileWriter.close();
 			} catch (IOException e) {
@@ -349,6 +370,7 @@ public class MainActivity extends Activity {
 
 	}
 
+	// TEST MODE
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		menu.add("Start");
@@ -404,5 +426,5 @@ public class MainActivity extends Activity {
 		intent.setClass(this, UploadIntentService.class);
 		startService(intent);
 	}
-
+	// TEST MODE
 }

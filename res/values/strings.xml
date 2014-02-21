@@ -8,4 +8,5 @@
     <string name="upload">上傳</string>
 	<string name="position">請輸入地點</string>
 	<string name="convert">Convert</string>
+	<string name="frequency">輸入掃描次數</string>
 </resources>
