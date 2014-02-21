@@ -46,7 +46,7 @@ public class MainActivity extends Activity {
 	private static final String TAG = "MyActivity";
 	private TextView tv;
 	private Button mScanButton, mUploadButton, mEnterButton, mConvertButton;
-	private EditText location;
+	private EditText position;
 	public WifiManager wm;
 	public static final int TIME = 30;
 	WifiManager.WifiLock wmlock;// ���WIFI�i�J�ίv
@@ -55,7 +55,7 @@ public class MainActivity extends Activity {
 
 	int strength;
 	int speed;
-	int Sequence;
+	int counter;
 
 	private List<ScanResult> results;
 
@@ -91,14 +91,14 @@ public class MainActivity extends Activity {
 		mEnterButton.setOnClickListener(enterButtonClickListener);
 		mConvertButton = (Button) findViewById(R.id.convert);
 		mConvertButton.setOnClickListener(convertButtonClickListener);
-		location = (EditText) findViewById(R.id.hint);
+		position = (EditText) findViewById(R.id.hint);
 		tv = (TextView) findViewById(R.id.wifiSS);
 		results = new ArrayList<ScanResult>();
 
 		helper = new DBHelper(this, "wifiData.db", null, 1);
 
 		SharedPreferences preferences = getPreferences(Context.MODE_PRIVATE);
-		Sequence = preferences.getInt("Sequence", 0);
+		counter = preferences.getInt("COUNTER", 0);
 	}
 
 	// /���U���s�}�l���y����AP
@@ -116,9 +116,9 @@ public class MainActivity extends Activity {
 				// Toast.makeText(MainActivity.this, "WiFi�}�Ҥ�",
 				// Toast.LENGTH_SHORT).show();
 			}
-			Sequence++;
+			counter++;
 			getPreferences(Context.MODE_PRIVATE).edit()
-					.putInt("Sequence", Sequence).commit();
+					.putInt("COUNTER", counter).commit();
 			wm.startScan();
 			// ����P��WIFI����
 			results = wm.getScanResults();
@@ -139,8 +139,8 @@ public class MainActivity extends Activity {
 		@Override
 		public void onClick(View v) {
 			// TODO Auto-generated method stub
-			pos = location.getText().toString();
-			Toast.makeText(v.getContext(), "The location is " + pos,
+			pos = position.getText().toString();
+			Toast.makeText(v.getContext(), "The position is " + pos,
 					Toast.LENGTH_LONG).show();
 			// Log.d(TAG, pos);
 		}
@@ -218,8 +218,8 @@ public class MainActivity extends Activity {
 				values.put("Mac_Address", apMac);
 				values.put("Ap_Name", apId);
 				values.put("RSS", level);
-				values.put("Location", pos);
-				values.put("Sequence", Sequence);
+				values.put("Position", pos);
+				values.put("Counter", counter);
 
 				db = helper.getWritableDatabase();
 				db.insert(DBHelper._TableName, null, values);
@@ -264,7 +264,7 @@ public class MainActivity extends Activity {
 
 	static class XmlBuilder {
 
-		//private static final String XML_OPENING = "<?xml version=\"1.0\" encoding=\"utf-8\"?>";
+		private static final String XML_OPENING = "<?xml version=\"1.0\" encoding=\"utf-8\"?>";
 		private static final String TUPLENAME = "WifiRecord";
 
 		private Cursor cursor;
@@ -290,12 +290,12 @@ public class MainActivity extends Activity {
 
 				mBuilder.append(openTag(TUPLENAME));
 				mBuilder.append("\n");
-				
-				mBuilder.append("\t" + openTag(DBHelper.SEQUENCE));
+
+				mBuilder.append("\t" + openTag(DBHelper.COUNTER));
 				mBuilder.append(ColumnOne);
-				mBuilder.append(endTag(DBHelper.SEQUENCE));
+				mBuilder.append(endTag(DBHelper.COUNTER));
 				mBuilder.append("\n");
-				
+
 				mBuilder.append("\t" + openTag(DBHelper.SCAN_ID));
 				mBuilder.append(ColumnTwo);
 				mBuilder.append(endTag(DBHelper.SCAN_ID));
@@ -316,9 +316,9 @@ public class MainActivity extends Activity {
 				mBuilder.append(endTag(DBHelper.RSS));
 				mBuilder.append("\n");
 
-				mBuilder.append("\t" + openTag(DBHelper.LOCATION));
+				mBuilder.append("\t" + openTag(DBHelper.POSITION));
 				mBuilder.append(ColumnSix);
-				mBuilder.append(endTag(DBHelper.LOCATION));
+				mBuilder.append(endTag(DBHelper.POSITION));
 				mBuilder.append("\n");
 
 				mBuilder.append(endTag(TUPLENAME));
